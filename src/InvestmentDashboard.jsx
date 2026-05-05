@@ -265,36 +265,7 @@ export default function InvestmentDashboard() {
         return;
       }
 
-      // Seed if the table is empty
-      if (data.length === 0) {
-        const today = new Date();
-        const FIXED = {
-          Chit:   [5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000],
-          Stocks: [15000,0,20000,0,12000,0,18000,0,25000,0,10000,30000],
-          MF:     [8000,8000,8000,8000,8000,8000,8000,8000,8000,8000,8000,8000],
-        };
-        const seed = [];
-        for (let i = 11; i >= 0; i--) {
-          const d = new Date(today.getFullYear(), today.getMonth() - i, 10);
-          const dateStr = localDateStr(d);
-          ["Chit", "Stocks", "MF"].forEach((type) => {
-            const amt = FIXED[type][11 - i];
-            if (amt > 0) seed.push({ date: dateStr, type, amount: amt });
-          });
-        }
-        const { data: seeded, error: seedErr } = await supabase
-          .from("history")
-          .insert(seed)
-          .select();
-        if (seedErr) {
-          setApiError("Seed failed: " + seedErr.message);
-          setLoading(false);
-          return;
-        }
-        setInvestments(seeded.map((r) => ({ ...r, id: r.id })));
-      } else {
-        setInvestments(data.map((r) => ({ ...r, id: r.id })));
-      }
+      setInvestments(data.map((r) => ({ ...r, id: r.id })));
 
       setApiError("");
       setLoading(false);
