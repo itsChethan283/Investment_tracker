@@ -275,10 +275,16 @@ export default function InvestmentDashboard() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      const start = Date.now();
+
       const { data, error } = await supabase
         .from("history")
         .select("*")
         .order("date", { ascending: true });
+
+      // Ensure splash shows for at least 1 second
+      const elapsed = Date.now() - start;
+      if (elapsed < 1000) await new Promise((r) => setTimeout(r, 1000 - elapsed));
 
       if (error) {
         setApiError("Could not connect to Supabase: " + error.message);
@@ -488,10 +494,57 @@ export default function InvestmentDashboard() {
         </div>
       )}
 
-      {/* Loading / API error banner */}
+      {/* Loading splash */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "80px 0", color: C.muted }}>
-          Connecting to database…
+        <div style={{
+          position: "fixed", inset: 0,
+          background: C.bg,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          zIndex: 999,
+          gap: 24,
+        }}>
+          <style>{`
+            @keyframes pulse-ring {
+              0%   { transform: scale(0.8); opacity: 0.6; }
+              50%  { transform: scale(1.15); opacity: 1; }
+              100% { transform: scale(0.8); opacity: 0.6; }
+            }
+            @keyframes bar-grow {
+              0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+              50%       { transform: scaleY(1);   opacity: 1; }
+            }
+          `}</style>
+          {/* Animated logo */}
+          <div style={{ position: "relative", width: 80, height: 80 }}>
+            <div style={{
+              position: "absolute", inset: 0,
+              borderRadius: "50%",
+              background: `${C.green}22`,
+              animation: "pulse-ring 1.6s ease-in-out infinite",
+            }} />
+            <div style={{
+              position: "absolute", inset: 10,
+              borderRadius: "50%",
+              background: "#1E1E1E",
+              border: `2px solid ${C.green}66`,
+              display: "flex", alignItems: "flex-end", justifyContent: "center",
+              gap: 5, padding: "14px 14px 10px",
+            }}>
+              {[0.5, 0.75, 1, 0.6].map((h, i) => (
+                <div key={i} style={{
+                  width: 6, borderRadius: 3,
+                  background: C.green,
+                  height: `${h * 28}px`,
+                  transformOrigin: "bottom",
+                  animation: `bar-grow 1.2s ease-in-out ${i * 0.2}s infinite`,
+                }} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center" }}>Portfolio Tracker</div>
+            <div style={{ fontSize: 12, color: C.muted, textAlign: "center", marginTop: 4 }}>Loading your investments…</div>
+          </div>
         </div>
       )}
       {!loading && apiError && (
