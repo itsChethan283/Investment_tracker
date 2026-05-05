@@ -81,7 +81,7 @@ function cumulativeByMonth(investments, type, months) {
     const monthEndStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
     return investments
       .filter((inv) => inv.type === type && inv.date <= monthEndStr)
-      .reduce((s, inv) => s + inv.amount, 0);
+      .reduce((s, inv) => s + inv.amount, 0); // negative amounts = sell/withdraw
   });
 }
 
@@ -159,7 +159,7 @@ function CustomTooltip({ active, payload, label, color }) {
 }
 
 // ── TypeCard: group breakdown tile with sparkline ─────────────────────────────
-function TypeCard({ type, investments, dateRange }) {
+function TypeCard({ type, investments, dateRange, onSelect, isActive }) {
   const color = TYPE_COLOR[type];
 
   const total = useMemo(
@@ -177,13 +177,17 @@ function TypeCard({ type, investments, dateRange }) {
 
   return (
     <div
+      onClick={() => onSelect(type)}
       style={{
         flex: 1,
         minWidth: 180,
-        background: `${color}12`,
-        border: `1px solid ${color}40`,
+        background: isActive ? `${color}22` : `${color}12`,
+        border: `1px solid ${isActive ? color : color + "40"}`,
         borderRadius: 14,
         padding: "18px 20px",
+        cursor: "pointer",
+        transition: "border 0.15s, background 0.15s",
+        boxShadow: isActive ? `0 0 0 2px ${color}33` : "none",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
@@ -243,6 +247,7 @@ export default function InvestmentDashboard() {
   const [form, setForm] = useState({
     amount: "",
     type: "Chit",
+    kind: "invest",
     date: localDateStr(),
   });
   const [formError, setFormError] = useState("");
@@ -349,9 +354,10 @@ export default function InvestmentDashboard() {
     if (!amt || amt <= 0) { setFormError("Enter a valid positive amount."); return; }
     if (!form.date) { setFormError("Select a date."); return; }
     setFormError("");
+    const signedAmt = form.kind === "invest" ? amt : -amt;
     const { data, error } = await supabase
       .from("history")
-      .insert({ date: form.date, type: form.type, amount: amt })
+      .insert({ date: form.date, type: form.type, amount: signedAmt })
       .select()
       .single();
     if (error) {
@@ -359,7 +365,7 @@ export default function InvestmentDashboard() {
       return;
     }
     setInvestments((prev) => [...prev, { ...data, id: data.id }]);
-    setForm((f) => ({ ...f, amount: "" }));
+    setForm((f) => ({ ...f, amount: "", kind: "invest" }));
     setShowModal(false);
   }, [form]);
 
@@ -493,7 +499,9 @@ export default function InvestmentDashboard() {
           >
             {/* Modal header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 15, fontWeight: 700 }}>Add Investment</span>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>
+                {form.kind === "invest" ? "Add Investment" : form.type === "Chit" ? "Withdraw" : "Sell"}
+              </span>
               <button
                 onClick={() => setShowModal(false)}
                 style={{
@@ -508,6 +516,33 @@ export default function InvestmentDashboard() {
               >
                 ×
               </button>
+            </div>
+
+            {/* Kind toggle */}
+            <div style={{ display: "flex", gap: 8 }}>
+              {["invest", "sell"].map((k) => {
+                const label = k === "invest" ? "Invest" : form.type === "Chit" ? "Withdraw" : "Sell";
+                const active = form.kind === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setForm((f) => ({ ...f, kind: k }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 0",
+                      borderRadius: 8,
+                      border: `1px solid ${active ? (k === "invest" ? C.green : "#e74c3c") : C.border}`,
+                      background: active ? (k === "invest" ? `${C.green}22` : "#e74c3c22") : "transparent",
+                      color: active ? (k === "invest" ? C.green : "#e74c3c") : C.muted,
+                      fontWeight: 700,
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Amount */}
@@ -571,7 +606,7 @@ export default function InvestmentDashboard() {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.82")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
-              + Add Investment
+              {form.kind === "invest" ? "+ Add Investment" : form.type === "Chit" ? "− Withdraw" : "− Sell"}
             </button>
 
             {/* Recent entries inside modal */}
@@ -701,8 +736,8 @@ export default function InvestmentDashboard() {
                             {inv.type}
                           </span>
                         </td>
-                        <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, color: C.text }}>
-                          {formatINR(inv.amount)}
+                        <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, color: inv.amount < 0 ? "#e74c3c" : C.text }}>
+                          {inv.amount < 0 ? `− ${formatINR(Math.abs(inv.amount))}` : formatINR(inv.amount)}
                         </td>
                         <td style={{ padding: "10px 8px", textAlign: "center", width: 36 }}>
                           <button
@@ -845,6 +880,8 @@ export default function InvestmentDashboard() {
                 type={type}
                 investments={investments}
                 dateRange={dateRange}
+                onSelect={setChartType}
+                isActive={chartType === type}
               />
             ))}
           </div>
