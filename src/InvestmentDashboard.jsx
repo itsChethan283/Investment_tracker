@@ -87,18 +87,25 @@ function cumulativeByMonth(investments, type, months) {
 }
 
 // ── Sparkline (pure SVG) ──────────────────────────────────────────────────────
-function Sparkline({ data, color, width = 90, height = 28 }) {
+function Sparkline({ data, color, height = 28 }) {
   if (!data || data.length < 2) return null;
+  const W = 100; // viewBox units — SVG scales to fill container
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
   const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * width;
+    const x = (i / (data.length - 1)) * W;
     const y = height - ((v - min) / range) * (height - 2);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
   return (
-    <svg width={width} height={height} style={{ display: "block" }}>
+    <svg
+      viewBox={`0 0 ${W} ${height}`}
+      width="100%"
+      height={height}
+      preserveAspectRatio="none"
+      style={{ display: "block" }}
+    >
       <polyline
         points={pts.join(" ")}
         fill="none"
@@ -218,7 +225,7 @@ function TypeCard({ type, investments, dateRange, periodMonths, onSelect, isActi
       <div className="amount" style={{ fontSize: 26, fontWeight: 700, color, marginBottom: 10 }}>
         {formatINR(total)}
       </div>
-      <Sparkline data={sparkVals} color={color} width={130} height={32} />
+      <Sparkline data={sparkVals} color={color} height={32} />
     </div>
   );
 }
@@ -422,6 +429,7 @@ export default function InvestmentDashboard() {
       }}
     >
       <style>{`
+        * { -webkit-tap-highlight-color: transparent; }
         @media (max-width: 480px) {
           .type-cards { gap: 8px !important; }
           .type-card { min-width: 0 !important; flex: 1 1 calc(33% - 6px) !important; padding: 10px 10px !important; }
