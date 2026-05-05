@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: investment-tracker-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/investments
+    envVars:
+      - key: MONGODB_URI
+        sync: false          # set manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false          # set manually after Vercel deploy
+      - key: PORT
+        value: 3001
