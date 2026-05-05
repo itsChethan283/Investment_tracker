@@ -434,6 +434,7 @@ export default function InvestmentDashboard() {
           .type-cards { gap: 8px !important; }
           .type-card { min-width: 0 !important; flex: 1 1 calc(33% - 6px) !important; padding: 10px 10px !important; }
           .type-card .amount { font-size: 15px !important; }
+          .btn-label { display: none; }
         }
       `}</style>
 
@@ -830,13 +831,17 @@ export default function InvestmentDashboard() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
           <h1 style={{ fontSize: 21, fontWeight: 700, color: C.green, margin: 0 }}>
             Portfolio Tracker
           </h1>
+          <div style={{ fontSize: 28, fontWeight: 800, color: C.text, marginTop: 4, letterSpacing: -0.5, lineHeight: 1.1 }}>
+            {formatINR(investments.reduce((s, inv) => s + inv.amount, 0))}
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Total invested (net)</div>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button
             onClick={() => setShowHistory(true)}
             style={{
@@ -844,7 +849,7 @@ export default function InvestmentDashboard() {
               color: C.muted,
               border: `1px solid ${C.border}`,
               borderRadius: 10,
-              padding: "10px 20px",
+              padding: "10px 16px",
               fontWeight: 700,
               fontSize: 13,
               cursor: "pointer",
@@ -860,7 +865,7 @@ export default function InvestmentDashboard() {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            History
+            <span className="btn-label">History</span>
           </button>
           <button
             onClick={() => setShowModal(true)}
@@ -869,7 +874,7 @@ export default function InvestmentDashboard() {
               color: "#000",
               border: "none",
               borderRadius: 10,
-              padding: "10px 20px",
+              padding: "10px 16px",
               fontWeight: 700,
               fontSize: 13,
               cursor: "pointer",
@@ -885,7 +890,7 @@ export default function InvestmentDashboard() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add Investment
+            <span className="btn-label">Add</span>
           </button>
         </div>
       </div>
