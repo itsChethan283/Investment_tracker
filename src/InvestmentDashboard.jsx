@@ -31,6 +31,7 @@ const PERIODS = [
   { label: "6M", months: 6 },
   { label: "1Y", months: 12 },
   { label: "2Y", months: 24 },
+  { label: "Full", months: 0 },
 ];
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -159,7 +160,7 @@ function CustomTooltip({ active, payload, label, color }) {
 }
 
 // ── TypeCard: group breakdown tile with sparkline ─────────────────────────────
-function TypeCard({ type, investments, dateRange, onSelect, isActive }) {
+function TypeCard({ type, investments, dateRange, periodMonths, onSelect, isActive }) {
   const color = TYPE_COLOR[type];
 
   const total = useMemo(
@@ -171,12 +172,22 @@ function TypeCard({ type, investments, dateRange, onSelect, isActive }) {
   );
 
   const sparkVals = useMemo(() => {
-    const months = monthsInRange(dateRange.start, dateRange.end);
+    let start = dateRange.start;
+    if (periodMonths === 0) {
+      const typeInvs = investments.filter((inv) => inv.type === type);
+      if (typeInvs.length > 0) {
+        const earliest = typeInvs.reduce((min, inv) => inv.date < min ? inv.date : min, typeInvs[0].date);
+        const [ey, em, ed] = earliest.split("-").map(Number);
+        start = new Date(ey, em - 1, ed);
+      }
+    }
+    const months = monthsInRange(start, dateRange.end);
     return cumulativeByMonth(investments, type, months);
-  }, [investments, type, dateRange]);
+  }, [investments, type, dateRange, periodMonths]);
 
   return (
     <div
+      className="type-card"
       onClick={() => onSelect(type)}
       style={{
         flex: 1,
@@ -204,7 +215,7 @@ function TypeCard({ type, investments, dateRange, onSelect, isActive }) {
           {type}
         </span>
       </div>
-      <div style={{ fontSize: 26, fontWeight: 700, color, marginBottom: 10 }}>
+      <div className="amount" style={{ fontSize: 26, fontWeight: 700, color, marginBottom: 10 }}>
         {formatINR(total)}
       </div>
       <Sparkline data={sparkVals} color={color} width={130} height={32} />
@@ -219,6 +230,7 @@ export default function InvestmentDashboard() {
   const [apiError, setApiError] = useState("");
   const [chartType, setChartType] = useState("Chit");
   const [periodMonths, setPeriodMonths] = useState(12);
+  const [customRange, setCustomRange] = useState({ active: false, start: "", end: "" });
   const [chartMinimized, setChartMinimized] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -281,10 +293,25 @@ export default function InvestmentDashboard() {
   //   start = 1 Jun 2025, end = 5 May 2026  → 12 monthly data points
   // Tomorrow (6 May 2026): same formula → still Jun 2025…May 2026 until month rolls over.
   const dateRange = useMemo(() => {
+    if (customRange.active && customRange.start && customRange.end) {
+      return { start: new Date(customRange.start), end: new Date(customRange.end) };
+    }
+    if (periodMonths === 0) {
+      // "Full" — from earliest investment of the active chart type to today
+      const end = new Date();
+      const typeInvs = investments.filter((inv) => inv.type === chartType);
+      if (typeInvs.length === 0) {
+        const start = new Date(end.getFullYear(), end.getMonth() - 11, 1);
+        return { start, end };
+      }
+      const earliest = typeInvs.reduce((min, inv) => inv.date < min ? inv.date : min, typeInvs[0].date);
+      const [ey, em, ed] = earliest.split("-").map(Number);
+      return { start: new Date(ey, em - 1, ed), end };
+    }
     const end = new Date();
     const start = new Date(end.getFullYear(), end.getMonth() - periodMonths + 1, 1);
     return { start, end };
-  }, [periodMonths]);
+  }, [periodMonths, customRange, investments, chartType]);
 
   // ── Chart data ────────────────────────────────────────────────────────────
   const chartData = useMemo(() => {
@@ -394,6 +421,14 @@ export default function InvestmentDashboard() {
         boxSizing: "border-box",
       }}
     >
+      <style>{`
+        @media (max-width: 480px) {
+          .type-cards { gap: 8px !important; }
+          .type-card { min-width: 0 !important; flex: 1 1 calc(33% - 6px) !important; padding: 10px 10px !important; }
+          .type-card .amount { font-size: 15px !important; }
+        }
+      `}</style>
+
       {/* Install banner (Android / Windows Chrome) */}
       {showInstallBanner && (
         <div
@@ -792,9 +827,6 @@ export default function InvestmentDashboard() {
           <h1 style={{ fontSize: 21, fontWeight: 700, color: C.green, margin: 0 }}>
             Portfolio Tracker
           </h1>
-          <p style={{ fontSize: 12, color: C.muted, margin: "3px 0 0" }}>
-            Track investments across Chit, Stocks &amp; MF
-          </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button
@@ -873,13 +905,14 @@ export default function InvestmentDashboard() {
           >
             Group Breakdown
           </div>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <div className="type-cards" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             {TYPES.map((type) => (
               <TypeCard
                 key={type}
                 type={type}
                 investments={investments}
                 dateRange={dateRange}
+                periodMonths={periodMonths}
                 onSelect={setChartType}
                 isActive={chartType === type}
               />
@@ -914,55 +947,17 @@ export default function InvestmentDashboard() {
             gap: 10,
           }}
         >
-          {/* Type picker */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>Performance</span>
-            <div style={{ position: "relative" }}>
-              <select
-                value={chartType}
-                onChange={(e) => setChartType(e.target.value)}
-                style={{
-                  background: "#252525",
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 8,
-                  color: activeColor,
-                  padding: "5px 26px 5px 10px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  outline: "none",
-                  cursor: "pointer",
-                  WebkitAppearance: "none",
-                  appearance: "none",
-                }}
-              >
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <span
-                style={{
-                  position: "absolute",
-                  right: 8,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: C.muted,
-                  pointerEvents: "none",
-                  fontSize: 9,
-                }}
-              >
-                ▼
-              </span>
-            </div>
-          </div>
+          {/* Title */}
+          <span style={{ fontWeight: 600, fontSize: 14 }}>Performance — {chartType}</span>
 
           {/* Period selector + minimize */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {PERIODS.map((p) => {
-              const active = periodMonths === p.months;
+              const active = !customRange.active && periodMonths === p.months;
               return (
                 <button
                   key={p.label}
-                  onClick={() => setPeriodMonths(p.months)}
+                  onClick={() => { setPeriodMonths(p.months); setCustomRange({ active: false, start: "", end: "" }); }}
                   style={{
                     background: active ? C.green : "transparent",
                     color: active ? "#000" : C.muted,
@@ -979,6 +974,21 @@ export default function InvestmentDashboard() {
                 </button>
               );
             })}
+            <button
+              onClick={() => setCustomRange((r) => ({ ...r, active: !r.active }))}
+              style={{
+                background: customRange.active ? "#333" : "transparent",
+                color: customRange.active ? C.text : C.muted,
+                border: `1px solid ${customRange.active ? "#888" : C.border}`,
+                borderRadius: 8,
+                padding: "4px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Custom
+            </button>
             <button
               onClick={() => setChartMinimized((v) => !v)}
               style={{
@@ -1020,6 +1030,29 @@ export default function InvestmentDashboard() {
             </button>
           </div>
         </div>
+
+        {/* Custom date range pickers */}
+        {customRange.active && (
+          <div style={{ display: "flex", gap: 12, padding: "12px 20px", borderBottom: `1px solid ${C.border}`, alignItems: "center", flexWrap: "wrap" }}>
+            <label style={{ fontSize: 11, color: C.muted, letterSpacing: 0.5 }}>FROM</label>
+            <input
+              type="date"
+              value={customRange.start}
+              max={customRange.end || localDateStr()}
+              onChange={(e) => setCustomRange((r) => ({ ...r, start: e.target.value }))}
+              style={{ background: "#252525", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, padding: "5px 10px", fontSize: 12, outline: "none", colorScheme: "dark" }}
+            />
+            <label style={{ fontSize: 11, color: C.muted, letterSpacing: 0.5 }}>TO</label>
+            <input
+              type="date"
+              value={customRange.end}
+              min={customRange.start}
+              max={localDateStr()}
+              onChange={(e) => setCustomRange((r) => ({ ...r, end: e.target.value }))}
+              style={{ background: "#252525", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, padding: "5px 10px", fontSize: 12, outline: "none", colorScheme: "dark" }}
+            />
+          </div>
+        )}
 
         {/* Minimized: sparkline strip */}
         <div
