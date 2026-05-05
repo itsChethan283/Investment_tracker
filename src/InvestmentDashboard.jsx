@@ -35,11 +35,8 @@ const PERIODS = [
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function formatINR(val) {
-  const v = Math.abs(val || 0);
-  if (v >= 1e7) return `₹${(v / 1e7).toFixed(2)}Cr`;
-  if (v >= 1e5) return `₹${(v / 1e5).toFixed(2)}L`;
-  if (v >= 1e3) return `₹${(v / 1e3).toFixed(1)}K`;
-  return `₹${Math.round(v)}`;
+  const v = Math.round(val || 0);
+  return `₹${v.toLocaleString("en-IN")}`;
 }
 
 /**
@@ -336,6 +333,17 @@ export default function InvestmentDashboard() {
   }, [investments]);
 
   // ── Add investment ────────────────────────────────────────────────────────
+  const handleDelete = useCallback(async (id) => {
+    setInvestments((prev) => prev.filter((i) => i.id !== id));
+    const { error } = await supabase.from("history").delete().eq("id", id);
+    if (error) {
+      setApiError("Delete failed: " + error.message);
+      // revert
+      const { data } = await supabase.from("history").select("*").order("date", { ascending: true });
+      if (data) setInvestments(data);
+    }
+  }, []);
+
   const handleAdd = useCallback(async () => {
     const amt = parseFloat(form.amount);
     if (!amt || amt <= 0) { setFormError("Enter a valid positive amount."); return; }
@@ -645,7 +653,7 @@ export default function InvestmentDashboard() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr>
-                    {["Date", "Type", "Amount"].map((h) => (
+                    {["Date", "Type", "Amount", ""].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -695,6 +703,17 @@ export default function InvestmentDashboard() {
                         </td>
                         <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, color: C.text }}>
                           {formatINR(inv.amount)}
+                        </td>
+                        <td style={{ padding: "10px 8px", textAlign: "center", width: 36 }}>
+                          <button
+                            onClick={() => handleDelete(inv.id)}
+                            title="Delete entry"
+                            style={{ background: "transparent", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 15, lineHeight: 1, padding: 2, opacity: 0.7 }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = 0.7)}
+                          >
+                            🗑
+                          </button>
                         </td>
                       </tr>
                     ))}
