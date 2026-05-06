@@ -31,7 +31,7 @@ export default function Auth() {
       }
       setLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
+        redirectTo: "https://i-invest.vercel.app",
       });
       if (error) {
         setError(error.message);

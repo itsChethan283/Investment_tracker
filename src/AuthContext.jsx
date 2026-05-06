@@ -9,11 +9,22 @@ export function AuthProvider({ children }) {
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Handle PKCE code exchange (e.g. password reset link with ?code=...)
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    const init = async () => {
+      if (code) {
+        // Exchange code for session — this triggers onAuthStateChange with PASSWORD_RECOVERY
+        await supabase.auth.exchangeCodeForSession(code);
+        // Clean the URL
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
+    };
 
     // Listen for auth state changes
     const {
@@ -24,6 +35,8 @@ export function AuthProvider({ children }) {
         setIsRecovery(true);
       }
     });
+
+    init();
 
     return () => subscription.unsubscribe();
   }, []);
