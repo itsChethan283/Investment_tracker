@@ -11,9 +11,10 @@ const C = {
 };
 
 export default function Auth() {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [mode, setMode] = useState("login"); // "login" | "signup" | "reset"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -22,6 +23,24 @@ export default function Auth() {
     e.preventDefault();
     setError("");
     setMessage("");
+
+    if (mode === "reset") {
+      if (!email) {
+        setError("Please enter your email.");
+        return;
+      }
+      setLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) {
+        setError(error.message);
+      } else {
+        setMessage("Password reset link sent! Check your email.");
+      }
+      setLoading(false);
+      return;
+    }
 
     if (!email || !password) {
       setError("Please fill in all fields.");
@@ -127,11 +146,12 @@ export default function Auth() {
             Portfolio Tracker
           </h1>
           <p style={{ fontSize: 13, color: C.muted, margin: "6px 0 0" }}>
-            {mode === "login" ? "Sign in to your account" : "Create a new account"}
+            {mode === "login" ? "Sign in to your account" : mode === "signup" ? "Create a new account" : "Reset your password"}
           </p>
         </div>
 
         {/* Mode toggle */}
+        {mode !== "reset" && (
         <div
           style={{
             display: "flex",
@@ -162,6 +182,7 @@ export default function Auth() {
             </button>
           ))}
         </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -188,6 +209,7 @@ export default function Auth() {
             />
           </div>
 
+          {mode !== "reset" && (
           <div>
             <label
               style={{
@@ -201,15 +223,67 @@ export default function Auth() {
             >
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              style={inputStyle}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                style={{ ...inputStyle, paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  color: C.muted,
+                  cursor: "pointer",
+                  padding: 4,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {mode === "login" && (
+              <button
+                type="button"
+                onClick={() => { setMode("reset"); setError(""); setMessage(""); }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: C.muted,
+                  fontSize: 11,
+                  cursor: "pointer",
+                  marginTop: 8,
+                  padding: 0,
+                  textDecoration: "underline",
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
+          )}
 
           {error && (
             <div
@@ -262,8 +336,28 @@ export default function Auth() {
               ? "Please wait…"
               : mode === "login"
                 ? "Sign In"
-                : "Create Account"}
+                : mode === "signup"
+                  ? "Create Account"
+                  : "Send Reset Link"}
           </button>
+          {mode === "reset" && (
+            <button
+              type="button"
+              onClick={() => { setMode("login"); setError(""); setMessage(""); }}
+              style={{
+                background: "transparent",
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                padding: "12px 0",
+                color: C.muted,
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              ← Back to Login
+            </button>
+          )}
         </form>
 
 
