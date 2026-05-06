@@ -887,21 +887,17 @@ export default function InvestmentDashboard() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
-            <h1 style={{ fontSize: 21, fontWeight: 700, color: C.green, margin: 0 }}>
-              Portfolio Tracker
-            </h1>
-            <span style={{ fontSize: 12, color: C.muted, background: "#252525", borderRadius: 6, padding: "3px 8px" }}>
-              {user.user_metadata?.username || user.email}
-            </span>
+      <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+        <h1 style={{ fontSize: 21, fontWeight: 700, color: C.green, margin: 0 }}>
+          Portfolio Tracker - {user.user_metadata?.username || user.email.split("@")[0]}
+        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: C.text, letterSpacing: -0.5, lineHeight: 1.1 }}>
+              {formatINR(investments.reduce((s, inv) => s + inv.amount, 0))}
+            </div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Total invested (net)</div>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: C.text, marginTop: 4, letterSpacing: -0.5, lineHeight: 1.1 }}>
-            {formatINR(investments.reduce((s, inv) => s + inv.amount, 0))}
-          </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Total invested (net)</div>
-        </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button
             onClick={signOut}
@@ -980,6 +976,7 @@ export default function InvestmentDashboard() {
             </svg>
             <span className="btn-label">Add</span>
           </button>
+        </div>
         </div>
       </div>
 
