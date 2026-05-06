@@ -14,6 +14,7 @@ export default function Auth() {
   const [mode, setMode] = useState("login"); // "login" | "signup" | "reset"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -55,9 +56,17 @@ export default function Auth() {
     setLoading(true);
 
     if (mode === "signup") {
+      if (!username.trim()) {
+        setError("Please enter a username.");
+        setLoading(false);
+        return;
+      }
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: { username: username.trim() },
+        },
       });
       if (error) {
         setError(error.message);
@@ -208,6 +217,31 @@ export default function Auth() {
               style={inputStyle}
             />
           </div>
+
+          {mode === "signup" && (
+          <div>
+            <label
+              style={{
+                fontSize: 11,
+                color: C.muted,
+                display: "block",
+                marginBottom: 6,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Your name"
+              autoComplete="username"
+              style={inputStyle}
+            />
+          </div>
+          )}
 
           {mode !== "reset" && (
           <div>
