@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { supabase } from "./supabaseClient";
+import { useAuth } from "./AuthContext";
 import {
   LineChart,
   Line,
@@ -232,6 +233,7 @@ function TypeCard({ type, investments, dateRange, periodMonths, onSelect, isActi
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function InvestmentDashboard() {
+  const { user, signOut } = useAuth();
   const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
@@ -280,6 +282,7 @@ export default function InvestmentDashboard() {
       const { data, error } = await supabase
         .from("history")
         .select("*")
+        .eq("user_id", user.id)
         .order("date", { ascending: true });
 
       // Ensure splash shows for at least 1 second
@@ -298,7 +301,7 @@ export default function InvestmentDashboard() {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [user.id]);
 
   // ── Sliding date window ───────────────────────────────────────────────────
   // `end` is always today — the window shifts forward automatically each day.
@@ -384,10 +387,10 @@ export default function InvestmentDashboard() {
     if (error) {
       setApiError("Delete failed: " + error.message);
       // revert
-      const { data } = await supabase.from("history").select("*").order("date", { ascending: true });
+      const { data } = await supabase.from("history").select("*").eq("user_id", user.id).order("date", { ascending: true });
       if (data) setInvestments(data);
     }
-  }, []);
+  }, [user.id]);
 
   const handleAdd = useCallback(async () => {
     const amt = parseFloat(form.amount);
@@ -397,7 +400,7 @@ export default function InvestmentDashboard() {
     const signedAmt = form.kind === "invest" ? amt : -amt;
     const { data, error } = await supabase
       .from("history")
-      .insert({ date: form.date, type: form.type, amount: signedAmt })
+      .insert({ date: form.date, type: form.type, amount: signedAmt, user_id: user.id })
       .select()
       .single();
     if (error) {
@@ -407,7 +410,7 @@ export default function InvestmentDashboard() {
     setInvestments((prev) => [...prev, { ...data, id: data.id }]);
     setForm((f) => ({ ...f, amount: "", kind: "invest" }));
     setShowModal(false);
-  }, [form]);
+  }, [form, user.id]);
 
   const activeColor = TYPE_COLOR[chartType];
 
@@ -895,6 +898,33 @@ export default function InvestmentDashboard() {
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Total invested (net)</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={signOut}
+            title="Sign out"
+            style={{
+              background: "transparent",
+              color: C.muted,
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+              padding: "10px 16px",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              transition: "all 0.18s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#e74c3c"; e.currentTarget.style.color = "#e74c3c"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span className="btn-label">Logout</span>
+          </button>
           <button
             onClick={() => setShowHistory(true)}
             style={{
