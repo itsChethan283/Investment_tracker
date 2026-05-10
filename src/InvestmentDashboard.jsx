@@ -144,15 +144,12 @@ function CustomTooltip({ active, payload, label, color }) {
       </div>
       {/* Cumulative total */}
       <div style={{ marginBottom: entries.length ? 8 : 0 }}>
-        <div style={{ fontSize: 10, color: "#666", letterSpacing: 0.5, marginBottom: 2 }}>CUMULATIVE TOTAL</div>
         <div style={{ color, fontWeight: 700, fontSize: 18, letterSpacing: -0.5 }}>
           {formatINR(total)}
         </div>
       </div>
-      {/* Individual entries this month */}
       {entries.length > 0 && (
         <div style={{ borderTop: "1px solid #282828", paddingTop: 7 }}>
-          <div style={{ fontSize: 10, color: "#666", letterSpacing: 0.5, marginBottom: 5 }}>ADDED THIS MONTH</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {entries.map((e) => (
               <div key={e.id} style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center" }}>
@@ -351,8 +348,21 @@ export default function InvestmentDashboard() {
   }, [investments, chartType, dateRange]);
 
   const yDomain = useMemo(() => {
-    const max = Math.max(...chartData.map((d) => d.value), 0);
-    return [0, Math.ceil(max * 1.15) || 10000];
+    const values = chartData.map((d) => d.value);
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+
+    if (max === min) {
+      const value = max || 10000;
+      const padding = Math.max(Math.abs(value) * 0.12, 1000);
+      return [Math.floor(value - padding), Math.ceil(value + padding)];
+    }
+
+    const padding = Math.max((max - min) * 0.12, 1);
+    const lower = Math.floor(min - padding);
+    const upper = Math.ceil(max + padding);
+
+    return [lower < 0 ? 0 : lower, upper];
   }, [chartData]);
 
   // Show at most ~6 X-axis labels regardless of period length
