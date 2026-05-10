@@ -1179,7 +1179,7 @@ export default function InvestmentDashboard() {
         {/* Maximized: full chart */}
         <div
           style={{
-            maxHeight: chartMinimized ? 0 : 440,
+            maxHeight: chartMinimized ? 0 : 360,
             opacity: chartMinimized ? 0 : 1,
             overflow: "hidden",
             transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease",
@@ -1188,7 +1188,7 @@ export default function InvestmentDashboard() {
           {chartData.every((d) => d.value === 0) ? (
             <div
               style={{
-                height: 200,
+                height: 180,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1199,27 +1199,33 @@ export default function InvestmentDashboard() {
               No {chartType} investments found in this period.
             </div>
           ) : (
-            <div style={{ padding: "16px 8px 16px 0", height: 400 }}>
+            <div style={{ padding: "16px 8px 16px 0", height: 320, minHeight: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}
-                  margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
                   <XAxis
                     dataKey="label"
                     interval={xInterval}
-                    tick={{ fill: C.muted, fontSize: 11 }}
+                    height={40}
+                    tick={{ fill: C.muted, fontSize: 10 }}
+                    tickMargin={8}
+                    minTickGap={18}
+                    angle={-20}
+                    textAnchor="end"
                     axisLine={{ stroke: C.border }}
                     tickLine={false}
                   />
                   <YAxis
                     domain={yDomain}
                     tickFormatter={formatINR}
-                    tick={{ fill: C.muted, fontSize: 11 }}
+                    tick={{ fill: C.muted, fontSize: 10 }}
+                    tickMargin={10}
                     axisLine={{ stroke: C.border }}
                     tickLine={false}
-                    width={80}
+                    width={70}
                   />
                   <Tooltip content={<CustomTooltip color={activeColor} />} />
                   <Line
