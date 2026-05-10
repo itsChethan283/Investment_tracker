@@ -1203,18 +1203,19 @@ export default function InvestmentDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}
-                  margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
+                  margin={{ top: 10, right: 20, left: 10, bottom: 30 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
                   <XAxis
                     dataKey="label"
-                    interval={xInterval}
-                    height={40}
+                    interval="preserveStartEnd"
+                    height={42}
                     tick={{ fill: C.muted, fontSize: 10 }}
                     tickMargin={8}
                     minTickGap={18}
                     angle={-20}
                     textAnchor="end"
+                    padding={{ left: 30, right: 40 }}
                     axisLine={{ stroke: C.border }}
                     tickLine={false}
                   />
