@@ -125,6 +125,7 @@ function CustomTooltip({ active, payload, label, color }) {
   const point = payload[0];
   const total = point?.value ?? 0;
   const entries = point?.payload?.entries ?? [];
+  const monthTotal = entries.reduce((sum, e) => sum + e.amount, 0);
   return (
     <div
       style={{
@@ -158,6 +159,12 @@ function CustomTooltip({ active, payload, label, color }) {
               </div>
             ))}
           </div>
+          {entries.length > 1 && (
+            <div style={{ borderTop: "1px solid #282828", paddingTop: 8, marginTop: 8, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: "#B3B3B3" }}>Month total</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color }}>{formatINR(monthTotal)}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
